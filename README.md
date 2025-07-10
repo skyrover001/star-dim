@@ -1,4 +1,4 @@
-# stardim
+# star-dim
 star dimension fusion compute cloud include HPC and AI
 
 ## HPC（slurm + lustre） 功能
