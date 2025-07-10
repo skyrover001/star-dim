@@ -1,2 +1,19 @@
 # stardim
-star dimension fusion compute cloud  
+star dimension fusion compute cloud include HPC and AI
+
+## HPC（slurm + lustre） 功能
+
+1、计算资源管理，包括资源使用情况、机时统计
+
+2、作业管理，包括作业提交、作业列表、作业管理、作业监控、作业查询
+
+3、存储资源管理，包括资源使用情况、文件管理（上传、下载、列表、新建等）
+
+4、软件管理，包括软件列表、软件安装卸载、可视化应用
+
+
+## AI （k8s） 功能
+
+1、计算资源管理，包括容器、GPU卡、CPU使用情况、容器启动关闭链接、镜像管理等
+
+2、存储资源管理，包括存储资源使用情况、文件管理（上传、下载、列表、新建等）
