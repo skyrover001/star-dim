@@ -1,4 +1,4 @@
-const { FileAPITester } = require('./test_upload.js');
+const { FileAPITester } = require('./all_test.js');
 const fs = require('fs');
 const path = require('path');
 
