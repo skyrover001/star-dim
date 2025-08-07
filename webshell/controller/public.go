@@ -7,6 +7,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	"net/http"
 	"path"
+	"strings"
 	"time"
 	"webshell/utils"
 )
@@ -47,7 +48,7 @@ type LogInfo struct {
 	Err error
 }
 
-type JumpController struct {
+type JumpService struct {
 	Clients     map[string]*JumpClient
 	Record      bool
 	RecordPath  string
@@ -81,7 +82,7 @@ func (jc *JumpClient) RepackPath(pathStr string) string {
 	return path.Join(jc.SSHInfo.HomePath, pathStr)
 }
 
-func (jc *JumpController) GetKeyFromRequest(c *gin.Context) (string, *RequestInfo, error) {
+func (js *JumpService) GetKeyFromRequest(c *gin.Context) (string, *RequestInfo, error) {
 	// ssh session key must be in header
 	sessionKey := c.GetHeader("sessionKey")
 	if sessionKey == "" {
@@ -94,36 +95,41 @@ func (jc *JumpController) GetKeyFromRequest(c *gin.Context) (string, *RequestInf
 		systemUsername := c.Query("systemUsername")
 		cluster := c.Query("cluster")
 		if cluster != "" {
-			jc.Clients[sessionKey].SSHInfo.Cluster = cluster
+			js.Clients[sessionKey].SSHInfo.Cluster = cluster
 		}
 		if systemUsername != "" {
-			jc.Clients[sessionKey].SSHInfo.UserName = systemUsername
+			js.Clients[sessionKey].SSHInfo.UserName = systemUsername
 		}
 		// if path is in query, set it to requestInfo
 		requestInfo.Path = c.Query("path")
 	case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
 		contentType := c.GetHeader("Content-Type")
-		switch contentType {
-		case "application/json":
+		switch {
+		case contentType == "application/json":
 			if err := c.ShouldBindJSON(&requestInfo); err != nil {
 				return "", nil, fmt.Errorf("failed to bind JSON: %v", err)
 			}
 			systemUsername := c.Query("systemUsername")
 			cluster := c.Query("cluster")
 			if cluster != "" {
-				jc.Clients[sessionKey].SSHInfo.Cluster = cluster
+				js.Clients[sessionKey].SSHInfo.Cluster = cluster
 			}
 			if systemUsername != "" {
-				jc.Clients[sessionKey].SSHInfo.UserName = systemUsername
+				js.Clients[sessionKey].SSHInfo.UserName = systemUsername
 			}
-		case "application/x-www-form-urlencoded", "multipart/form-data":
+		case contentType == "application/x-www-form-urlencoded" || strings.HasPrefix(contentType, "multipart/form-data"):
 			cluster, _ := c.GetPostForm("cluster")
 			systemUsername, _ := c.GetPostForm("systemUsername")
 			if cluster != "" {
-				jc.Clients[sessionKey].SSHInfo.Cluster = cluster
+				js.Clients[sessionKey].SSHInfo.Cluster = cluster
 			}
 			if systemUsername != "" {
-				jc.Clients[sessionKey].SSHInfo.UserName = systemUsername
+				js.Clients[sessionKey].SSHInfo.UserName = systemUsername
+			}
+			// 对于文件上传，我们也需要获取其他表单字段
+			if strings.HasPrefix(contentType, "multipart/form-data") {
+				requestInfo.Path, _ = c.GetPostForm("path")
+				requestInfo.Type, _ = c.GetPostForm("type")
 			}
 		default:
 			return "", nil, fmt.Errorf("unsupported content type: %s", contentType)

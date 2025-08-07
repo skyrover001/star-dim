@@ -107,7 +107,7 @@ func GetHomeDir(username string) string {
 }
 
 // Close connects
-func (s *JumpController) Close() {
+func (s *JumpService) Close() {
 	for _, sc := range s.Clients {
 		if sc != nil {
 			_ = sc.SSHClient.Close()
@@ -117,7 +117,19 @@ func (s *JumpController) Close() {
 }
 
 // List objects
-func (j *JumpController) List(c *gin.Context) {
+// @Summary 列出目录下的文件和子目录
+// @Description 获取指定路径下的文件和目录列表，返回文件名、大小、权限、修改时间等信息
+// @Tags 文件管理
+// @Accept json
+// @Produce json
+// @Param cluster query string true "集群名称" example("hpc1")
+// @Param path query string true "目录路径" example("/ai")
+// @Param request header string true "sessionKey" default("tsh_1234567890abcdef") "SSH session key, must be in header"
+// @Success 200 {object} object{listContent=[]FileInfoJSON,listLength=int,success=string} "成功返回文件列表"
+// @Failure 400 {object} object{error=string} "请求参数错误"
+// @Failure 500 {object} object{error=string} "服务器内部错误或用户未登录"
+// @Router /api/v2/files/ [get]
+func (j *JumpService) List(c *gin.Context) {
 	// list Object
 	key, req, err := j.GetKeyFromRequest(c)
 	if err != nil {
@@ -150,11 +162,28 @@ func (j *JumpController) List(c *gin.Context) {
 	// curl test: curl -X POST -H "Content-Type: application/json" -d "{\"username\":\"root\",\"path\":\"/root/\"}" http://localhost:8080/api/v2/document/files/
 }
 
-// Transmission data (upload file)
-func (j *JumpController) Transmission(c *gin.Context) {
+// Transmission uploads a file
+// @Summary 上传文件
+// @Description 上传文件到指定路径，支持断点续传和文件覆盖更新功能
+// @Tags 文件管理
+// @Accept multipart/form-data
+// @Produce json
+// @Param sessionKey header string true "SSH会话密钥" example("tsh_a2e932b625c0d598db3800aa91b92016")
+// @Param cluster formData string true "集群名称" example("hpc1")
+// @Param path formData string true "上传路径" example("/ai/upload/test.txt")
+// @Param offset formData string false "文件偏移量（用于断点续传）" example("0")
+// @Param update formData string false "是否覆盖已存在文件" Enums(true,false) example("false")
+// @Param file formData file true "要上传的文件"
+// @Success 200 {object} object{success=string} "上传成功" example({"success":"yes"})
+// @Failure 400 {object} object{error=string} "请求参数错误或文件为空"
+// @Failure 409 {object} object{error=string} "文件已存在且未设置覆盖标志"
+// @Failure 500 {object} object{error=string} "服务器内部错误或用户未登录"
+// @Router /api/v2/files/transmission/ [post]
+func (j *JumpService) Transmission(c *gin.Context) {
 	key, _, err := j.GetKeyFromRequest(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err)
+		return
 	}
 	if _, ok := j.Clients[key]; !ok {
 		c.JSON(http.StatusInternalServerError, errors.New("user not login"))
@@ -163,6 +192,7 @@ func (j *JumpController) Transmission(c *gin.Context) {
 	sftpClient := j.Clients[key].SftpClient
 
 	path, _ := c.GetPostForm("path")
+	path = j.Clients[key].RepackPath(path)
 	offsetStr, _ := c.GetPostForm("offset")
 	update, ok := c.GetPostForm("update")
 	if !ok {
@@ -180,6 +210,7 @@ func (j *JumpController) Transmission(c *gin.Context) {
 		return
 	}
 	_, err = sftpClient.Lstat(path)
+	log.Println("upload path:", path, " offset:", offset, " update:", update, " size:", input.Size)
 	if input.Size == 0 {
 		// upload empty file
 		if err == nil {
@@ -264,11 +295,25 @@ func (j *JumpController) Transmission(c *gin.Context) {
 	}
 }
 
-// Download file and directory by zip
-func (j *JumpController) Download(c *gin.Context) {
+// Download downloads a file or directory
+// @Summary 下载文件或目录
+// @Description 下载指定路径的文件或目录。文件直接下载，目录会被打包成ZIP文件下载
+// @Tags 文件管理
+// @Accept json
+// @Produce application/octet-stream
+// @Param sessionKey header string true "SSH会话密钥" example("tsh_a2e932b625c0d598db3800aa91b92016")
+// @Param cluster query string true "集群名称" example("hpc1")
+// @Param path query string true "文件或目录路径" example("/ai/mcp")
+// @Success 200 {file} file "下载成功，返回文件内容或ZIP压缩包"
+// @Failure 400 {object} object{error=string} "请求参数错误"
+// @Failure 404 {object} object{error=string} "文件或目录不存在"
+// @Failure 500 {object} object{error=string} "服务器内部错误或用户未登录"
+// @Router /api/v2/files/download/ [get]
+func (j *JumpService) Download(c *gin.Context) {
 	key, req, err := j.GetKeyFromRequest(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err)
+		return
 	}
 	if _, ok := j.Clients[key]; !ok {
 		c.JSON(http.StatusInternalServerError, errors.New("user not login"))
@@ -332,11 +377,25 @@ func (j *JumpController) Download(c *gin.Context) {
 	// curl test: http://localhost:8080/api/v2/document/download/?username=root&path=/root/scritps
 }
 
-// show attribute of file or directory
-func (j *JumpController) Attr(c *gin.Context) {
+// GetAttributes gets file or directory attributes
+// @Summary 获取文件或目录属性
+// @Description 获取指定路径文件或目录的详细属性信息，包括名称、大小、权限、修改时间等
+// @Tags 文件管理
+// @Accept json
+// @Produce json
+// @Param sessionKey header string true "SSH会话密钥" example("tsh_a2e932b625c0d598db3800aa91b92016")
+// @Param cluster query string true "集群名称" example("hpc1")
+// @Param path query string true "文件或目录路径" example("/ai/new_folder_rename/test_renamed.sh")
+// @Success 200 {object} object{name=string,size=int,mode=string,modify=string,isDir=bool} "获取属性成功" example({"name":"test_renamed.sh","size":29,"mode":"-rw-r--r--","modify":"2025-08-07 10:16:36 +0800 CST","isDir":false})
+// @Failure 400 {object} object{error=string} "请求参数错误"
+// @Failure 404 {object} object{error=string} "文件或目录不存在"
+// @Failure 500 {object} object{error=string} "服务器内部错误或用户未登录"
+// @Router /api/v2/files/attr/ [get]
+func (j *JumpService) Attr(c *gin.Context) {
 	key, req, err := j.GetKeyFromRequest(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err)
+		return
 	}
 	if _, ok := j.Clients[key]; !ok {
 		c.JSON(http.StatusInternalServerError, errors.New("user not login"))
@@ -355,19 +414,34 @@ func (j *JumpController) Attr(c *gin.Context) {
 	c.JSON(200, FileInfoToJSON(fileInfo))
 }
 
-// rename file or directory
-func (j *JumpController) Rename(c *gin.Context) {
+// Rename renames a file or directory
+// @Summary 重命名文件或目录
+// @Description 将指定路径的文件或目录重命名到新路径，支持文件和目录的重命名操作
+// @Tags 文件管理
+// @Accept json
+// @Produce json
+// @Param sessionKey header string true "SSH会话密钥" example("tsh_a2e932b625c0d598db3800aa91b92016")
+// @Param request body object{old_path=string,new_path=string} true "重命名请求参数" Example({"old_path":"/ai/new_folder","new_path":"/ai/new_folder_rename"})
+// @Success 200 {object} object{success=string} "重命名成功" example({"success":"yes"})
+// @Failure 400 {object} object{error=string} "请求参数错误"
+// @Failure 404 {object} object{error=string} "源文件或目录不存在"
+// @Failure 409 {object} object{error=string} "目标路径已存在"
+// @Failure 500 {object} object{error=string} "服务器内部错误或用户未登录"
+// @Router /api/v2/files/ [put]
+func (j *JumpService) Rename(c *gin.Context) {
 	key, req, err := j.GetKeyFromRequest(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err)
+		return
 	}
 	if _, ok := j.Clients[key]; !ok {
 		c.JSON(http.StatusInternalServerError, errors.New("user not login"))
 		return
 	}
 	sftpClient := j.Clients[key].SftpClient
-	oldPath := req.OldPath
-	newPath := req.NewPath
+	oldPath := j.Clients[key].RepackPath(req.OldPath)
+	newPath := j.Clients[key].RepackPath(req.NewPath)
+	log.Println("rename oldPath:", oldPath, " newPath:", newPath)
 
 	err = sftpClient.Rename(oldPath, newPath)
 	if err != nil {
@@ -378,15 +452,27 @@ func (j *JumpController) Rename(c *gin.Context) {
 	c.JSON(200, map[string]interface{}{"success": "yes"})
 }
 
-// new file or directory
-func (j *JumpController) New(c *gin.Context) {
+// New creates a new file or directory
+// @Summary 创建新文件或目录
+// @Description 在指定路径创建新的文件或目录，支持创建空文件和目录
+// @Tags 文件管理
+// @Accept json
+// @Produce json
+// @Param sessionKey header string true "SSH会话密钥" example("tsh_a2e932b625c0d598db3800aa91b92016")
+// @Param request body object{path=string,type=string} true "创建请求参数" Example({"path":"/ai/new_folder","type":"dir"})
+// @Success 200 {object} object{success=string} "创建成功" example({"success":"yes"})
+// @Failure 400 {object} object{error=string} "请求参数错误"
+// @Failure 409 {object} object{error=string} "文件或目录已存在"
+// @Failure 500 {object} object{error=string} "服务器内部错误或用户未登录"
+// @Router /api/v2/files/ [post]
+func (j *JumpService) New(c *gin.Context) {
 	key, req, err := j.GetKeyFromRequest(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err)
+		return
 	}
 	if _, ok := j.Clients[key]; !ok {
 		c.JSON(http.StatusInternalServerError, errors.New("user not login"))
-		return
 	}
 	jumpClient := j.Clients[key]
 	sftpClient := jumpClient.SftpClient
@@ -396,13 +482,10 @@ func (j *JumpController) New(c *gin.Context) {
 	log.Println("new path:", path, " type:", fileType, " home path:", jumpClient.SSHInfo.HomePath)
 	if fileType != "file" && fileType != "dir" {
 		c.JSON(http.StatusInternalServerError, errors.New("type must be file or dir"))
-		return
 	}
 	_, err = sftpClient.Lstat(path)
 	if err == nil {
-		// file exist
 		c.JSON(http.StatusInternalServerError, errors.New("file exist"))
-		return
 	} else {
 		if strings.Contains(err.Error(), "file does not exist") {
 			if fileType == "file" {
@@ -410,7 +493,6 @@ func (j *JumpController) New(c *gin.Context) {
 				if err != nil {
 					log.Println(err)
 					c.JSON(http.StatusInternalServerError, err)
-					return
 				}
 				_ = f.Close()
 			} else {
@@ -418,24 +500,34 @@ func (j *JumpController) New(c *gin.Context) {
 				if err != nil {
 					log.Println(err)
 					c.JSON(http.StatusInternalServerError, err)
-					return
 				}
 			}
 			c.JSON(200, map[string]interface{}{"success": "yes"})
-			return
 		} else {
 			log.Println(err)
 			c.JSON(http.StatusInternalServerError, err)
-			return
 		}
 	}
 }
 
-// Delete file or directory
-func (j *JumpController) Delete(c *gin.Context) {
+// Delete removes a file or directory
+// @Summary 删除文件或目录
+// @Description 删除指定路径的文件或目录，支持删除单个文件和空目录
+// @Tags 文件管理
+// @Accept json
+// @Produce json
+// @Param sessionKey header string true "SSH会话密钥" example("tsh_a2e932b625c0d598db3800aa91b92016")
+// @Param request body object{path=string,type=string} true "删除请求参数" Example({"path":"/ai/new_folder/test.sh","type":"file"})
+// @Success 200 {object} object{success=string} "删除成功" example({"success":"yes"})
+// @Failure 400 {object} object{error=string} "请求参数错误"
+// @Failure 404 {object} object{error=string} "文件或目录不存在"
+// @Failure 500 {object} object{error=string} "服务器内部错误或用户未登录"
+// @Router /api/v2/files/ [delete]
+func (j *JumpService) Delete(c *gin.Context) {
 	key, req, err := j.GetKeyFromRequest(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err)
+		return
 	}
 	if _, ok := j.Clients[key]; !ok {
 		c.JSON(http.StatusInternalServerError, errors.New("user not login"))
@@ -463,11 +555,25 @@ func (j *JumpController) Delete(c *gin.Context) {
 	c.JSON(200, map[string]interface{}{"success": "yes"})
 }
 
-// copy file or directory
-func (j *JumpController) Copy(c *gin.Context) {
+// Copy copies a file or directory
+// @Summary 复制文件或目录
+// @Description 将源路径的文件或目录复制到目标路径，支持文件和目录的复制操作
+// @Tags 文件管理
+// @Accept json
+// @Produce json
+// @Param sessionKey header string true "SSH会话密钥" example("tsh_a2e932b625c0d598db3800aa91b92016")
+// @Param request body object{src_path=string,dst_path=string} true "复制请求参数" Example({"src_path":"/ai/new_folder_rename/test_renamed.sh","dst_path":"/ai/new_folder_rename/test_copy.sh"})
+// @Success 200 {object} object{success=string} "复制成功" example({"success":"yes"})
+// @Failure 400 {object} object{error=string} "请求参数错误"
+// @Failure 404 {object} object{error=string} "源文件或目录不存在"
+// @Failure 409 {object} object{error=string} "目标路径已存在"
+// @Failure 500 {object} object{error=string} "服务器内部错误或用户未登录"
+// @Router /api/v2/files/copy/ [post]
+func (j *JumpService) Copy(c *gin.Context) {
 	key, req, err := j.GetKeyFromRequest(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err)
+		return
 	}
 	if _, ok := j.Clients[key]; !ok {
 		c.JSON(http.StatusInternalServerError, errors.New("user not login"))
@@ -525,11 +631,25 @@ func (j *JumpController) Copy(c *gin.Context) {
 	}
 }
 
-// Move file or directory
-func (j *JumpController) Move(c *gin.Context) {
+// Move moves a file or directory
+// @Summary 移动文件或目录
+// @Description 将源路径的文件或目录移动到目标路径，支持文件和目录的移动操作
+// @Tags 文件管理
+// @Accept json
+// @Produce json
+// @Param sessionKey header string true "SSH会话密钥" example("tsh_a2e932b625c0d598db3800aa91b92016")
+// @Param request body object{src_path=string,dst_path=string} true "移动请求参数" Example({"src_path":"/ai/new_folder_rename/test_copy.sh","dst_path":"/ai/new_folder_rename/test_moved.sh"})
+// @Success 200 {object} object{success=string} "移动成功" example({"success":"yes"})
+// @Failure 400 {object} object{error=string} "请求参数错误"
+// @Failure 404 {object} object{error=string} "源文件或目录不存在"
+// @Failure 409 {object} object{error=string} "目标路径已存在"
+// @Failure 500 {object} object{error=string} "服务器内部错误或用户未登录"
+// @Router /api/v2/files/move/ [post]
+func (j *JumpService) Move(c *gin.Context) {
 	key, req, err := j.GetKeyFromRequest(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err)
+		return
 	}
 	if _, ok := j.Clients[key]; !ok {
 		c.JSON(http.StatusInternalServerError, errors.New("user not login"))
@@ -587,11 +707,25 @@ func (j *JumpController) Move(c *gin.Context) {
 	}
 }
 
-// read file content
-func (j *JumpController) ReadFile(c *gin.Context) {
+// ReadContent reads content from a file
+// @Summary 读取文件内容
+// @Description 读取指定路径文件的内容，返回文件的文本内容
+// @Tags 文件管理
+// @Accept json
+// @Produce plain
+// @Param sessionKey header string true "SSH会话密钥" example("tsh_a2e932b625c0d598db3800aa91b92016")
+// @Param cluster query string true "集群名称" example("hpc1")
+// @Param path query string true "文件路径" example("/ai/new_folder_rename/test_renamed.sh")
+// @Success 200 {string} string "文件内容" example("#!/bin/bash\\necho Hello World")
+// @Failure 400 {object} object{error=string} "请求参数错误"
+// @Failure 404 {object} object{error=string} "文件不存在"
+// @Failure 500 {object} object{error=string} "服务器内部错误或用户未登录"
+// @Router /api/v2/files/content/ [get]
+func (j *JumpService) ReadFile(c *gin.Context) {
 	key, req, err := j.GetKeyFromRequest(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err)
+		return
 	}
 	if _, ok := j.Clients[key]; !ok {
 		c.JSON(http.StatusInternalServerError, errors.New("user not login"))
@@ -630,11 +764,24 @@ func (j *JumpController) ReadFile(c *gin.Context) {
 	c.Data(http.StatusOK, "text/plain", content)
 }
 
-// WriteFile content to file
-func (j *JumpController) WriteFile(c *gin.Context) {
+// WriteContent writes content to a file
+// @Summary 写入文件内容
+// @Description 将指定内容写入到文件中，如果文件不存在会自动创建
+// @Tags 文件管理
+// @Accept json
+// @Produce json
+// @Param sessionKey header string true "SSH会话密钥" example("tsh_a2e932b625c0d598db3800aa91b92016")
+// @Param request body object{cluster=string,path=string,content=string} true "写入内容请求参数" Example({"cluster":"hpc1","path":"/ai/new_folder_rename/test_renamed.sh","content":"#!/bin/bash\\necho Hello World"})
+// @Success 200 {object} object{content=string,success=string} "写入成功" example({"content":"","success":"yes"})
+// @Failure 400 {object} object{error=string} "请求参数错误"
+// @Failure 404 {object} object{error=string} "文件路径不存在"
+// @Failure 500 {object} object{error=string} "服务器内部错误或用户未登录"
+// @Router /api/v2/files/content/ [post]
+func (j *JumpService) WriteFile(c *gin.Context) {
 	key, req, err := j.GetKeyFromRequest(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err)
+		return
 	}
 	if _, ok := j.Clients[key]; !ok {
 		c.JSON(http.StatusInternalServerError, errors.New("user not login"))
@@ -663,11 +810,25 @@ func (j *JumpController) WriteFile(c *gin.Context) {
 	c.JSON(200, map[string]interface{}{"success": "yes"})
 }
 
-// execute file content
-func (j *JumpController) ExecuteFile(c *gin.Context) {
+// ExecuteFile executes a script file
+// @Summary 执行脚本文件
+// @Description 执行指定路径的脚本文件，使用bash解释器运行并返回执行结果
+// @Tags 文件管理
+// @Accept json
+// @Produce plain
+// @Param sessionKey header string true "SSH会话密钥" example("tsh_a2e932b625c0d598db3800aa91b92016")
+// @Param cluster query string true "集群名称" example("hpc1")
+// @Param path query string true "脚本文件路径" example("/ai/new_folder_rename/test_renamed.sh")
+// @Success 200 {string} string "执行成功，返回脚本输出" example("Hello World\nScript executed successfully")
+// @Failure 400 {object} object{error=string} "请求参数错误或路径是目录"
+// @Failure 404 {object} object{error=string} "脚本文件不存在"
+// @Failure 500 {object} object{error=string} "服务器内部错误、用户未登录或脚本执行失败"
+// @Router /api/v2/files/execute/ [post]
+func (j *JumpService) ExecuteFile(c *gin.Context) {
 	key, req, err := j.GetKeyFromRequest(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err)
+		return
 	}
 	if _, ok := j.Clients[key]; !ok {
 		c.JSON(http.StatusInternalServerError, errors.New("user not login"))
@@ -708,11 +869,25 @@ func (j *JumpController) ExecuteFile(c *gin.Context) {
 	c.Data(http.StatusOK, "text/plain", output)
 }
 
-// chmod file or directory
-func (j *JumpController) Chmod(c *gin.Context) {
+// ChangeMode changes file or directory permissions
+// @Summary 修改文件或目录权限
+// @Description 修改指定路径文件或目录的权限模式，支持数字权限格式（如755、644等）
+// @Tags 文件管理
+// @Accept json
+// @Produce json
+// @Param sessionKey header string true "SSH会话密钥" example("tsh_a2e932b625c0d598db3800aa91b92016")
+// @Param request body object{path=string,mode=string} true "修改权限请求参数" Example({"path":"/ai/new_folder_rename/test_renamed.sh","mode":"755"})
+// @Success 200 {object} object{success=string} "修改权限成功" example({"success":"yes"})
+// @Failure 400 {object} object{error=string} "请求参数错误或权限格式无效"
+// @Failure 404 {object} object{error=string} "文件或目录不存在"
+// @Failure 403 {object} object{error=string} "没有权限修改该文件"
+// @Failure 500 {object} object{error=string} "服务器内部错误或用户未登录"
+// @Router /api/v2/files/chmod/ [post]
+func (j *JumpService) Chmod(c *gin.Context) {
 	key, req, err := j.GetKeyFromRequest(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err)
+		return
 	}
 	if _, ok := j.Clients[key]; !ok {
 		c.JSON(http.StatusInternalServerError, errors.New("user not login"))
@@ -739,11 +914,25 @@ func (j *JumpController) Chmod(c *gin.Context) {
 	c.JSON(200, map[string]interface{}{"success": "yes"})
 }
 
-// chown file or directory content
-func (j *JumpController) Chown(c *gin.Context) {
+// Chown changes file or directory ownership
+// @Summary 修改文件或目录所有者
+// @Description 修改指定路径文件或目录的所有者和组，需要提供用户ID和组ID
+// @Tags 文件管理
+// @Accept json
+// @Produce json
+// @Param sessionKey header string true "SSH会话密钥" example("tsh_a2e932b625c0d598db3800aa91b92016")
+// @Param request body object{path=string,owner=string,group=string} true "修改所有者请求参数" Example({"path":"/ai/new_folder_rename/test_renamed.sh","owner":"1000","group":"1000"})
+// @Success 200 {object} object{success=string} "修改所有者成功" example({"success":"yes"})
+// @Failure 400 {object} object{error=string} "请求参数错误或用户ID/组ID格式无效"
+// @Failure 404 {object} object{error=string} "文件或目录不存在"
+// @Failure 403 {object} object{error=string} "没有权限修改该文件所有者"
+// @Failure 500 {object} object{error=string} "服务器内部错误或用户未登录"
+// @Router /api/v2/files/chown/ [post]
+func (j *JumpService) Chown(c *gin.Context) {
 	key, req, err := j.GetKeyFromRequest(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err)
+		return
 	}
 	if _, ok := j.Clients[key]; !ok {
 		c.JSON(http.StatusInternalServerError, errors.New("user not login"))
@@ -780,11 +969,25 @@ func (j *JumpController) Chown(c *gin.Context) {
 	c.JSON(200, map[string]interface{}{"success": "yes"})
 }
 
-// get quato information use lustre command
-func (j *JumpController) Quota(c *gin.Context) {
+// GetQuota gets disk quota information
+// @Summary 获取磁盘配额信息
+// @Description 获取指定用户或文件系统的磁盘配额信息，包括已使用空间、配额限制、文件数量等详细信息
+// @Tags 文件管理
+// @Accept json
+// @Produce json
+// @Param sessionKey header string true "SSH会话密钥" example("tsh_a2e932b625c0d598db3800aa91b92016")
+// @Param cluster query string true "集群名称" example("hpc1")
+// @Param path query string false "查询路径" example("/home/user")
+// @Success 200 {object} QuotaInfo "获取配额信息成功" example({"filesystem":"/dev/sda1","kbytes":1024000,"kbytes_quota":2048000,"kbytes_limit":2097152,"kbytes_grace":"none","files":1000,"files_quota":5000,"files_limit":10000,"files_grace":"none"})
+// @Failure 400 {object} object{error=string} "请求参数错误"
+// @Failure 404 {object} object{error=string} "路径不存在或配额信息不可用"
+// @Failure 500 {object} object{error=string} "服务器内部错误或用户未登录"
+// @Router /api/v2/files/quota/ [get]
+func (j *JumpService) Quota(c *gin.Context) {
 	key, _, err := j.GetKeyFromRequest(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err)
+		return
 	}
 	if _, ok := j.Clients[key]; !ok {
 		c.JSON(http.StatusInternalServerError, errors.New("user not login"))

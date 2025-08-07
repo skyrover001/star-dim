@@ -191,12 +191,12 @@ func NewTransfer(wsConn *websocket.Conn, sshClient *ssh.Client, rec *Recorder, c
 }
 
 // webssh
-func (s *JumpController) SSH(c *gin.Context) {
-	key, _, err := s.GetKeyFromRequest(c)
+func (j *JumpService) SSH(c *gin.Context) {
+	key, _, err := j.GetKeyFromRequest(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err)
 	}
-	if _, ok := s.Clients[key]; !ok {
+	if _, ok := j.Clients[key]; !ok {
 		c.JSON(http.StatusInternalServerError, errors.New("user not login"))
 		return
 	}
@@ -222,17 +222,17 @@ func (s *JumpController) SSH(c *gin.Context) {
 	//<-ch
 	//<-ch
 	var recorder *Recorder
-	if s.Record {
-		filename := fmt.Sprintf("%s_%s_%s_%s.cast", s.Clients[key].SSHInfo.Cluster, s.Clients[key].SSHInfo.UserName, strings.Replace(ip, ":", "", -1), time.Now().Format("20060102_150405"))
+	if j.Record {
+		filename := fmt.Sprintf("%s_%s_%s_%s.cast", j.Clients[key].SSHInfo.Cluster, j.Clients[key].SSHInfo.UserName, strings.Replace(ip, ":", "", -1), time.Now().Format("20060102_150405"))
 		var recordFilePath = ""
 		var recordFileDir = ""
 		switch runtime.GOOS {
 		case "windows":
-			recordFileDir = filepath.Join(s.RecordPath, s.Clients[key].SSHInfo.Cluster, s.Clients[key].SSHInfo.UserName)
+			recordFileDir = filepath.Join(j.RecordPath, j.Clients[key].SSHInfo.Cluster, j.Clients[key].SSHInfo.UserName)
 			recordFilePath = filepath.Join(recordFileDir, filename)
 			break
 		case "linux":
-			recordFileDir = path.Join(s.RecordPath, s.Clients[key].SSHInfo.Cluster, s.Clients[key].SSHInfo.UserName)
+			recordFileDir = path.Join(j.RecordPath, j.Clients[key].SSHInfo.Cluster, j.Clients[key].SSHInfo.UserName)
 			recordFilePath = path.Join(recordFileDir, filename)
 			break
 		default:
@@ -251,7 +251,7 @@ func (s *JumpController) SSH(c *gin.Context) {
 		recorder = NewRecorder(f)
 	}
 
-	t, err := NewTransfer(ws, s.Clients[key].SSHClient, recorder, s.Clients[key].SSHInfo.Cluster, s.Clients[key].SSHInfo.UserName)
+	t, err := NewTransfer(ws, j.Clients[key].SSHClient, recorder, j.Clients[key].SSHInfo.Cluster, j.Clients[key].SSHInfo.UserName)
 
 	if err != nil {
 		_ = ws.WriteControl(websocket.CloseMessage,
@@ -269,7 +269,7 @@ func (s *JumpController) SSH(c *gin.Context) {
 	wg.Add(2)
 	cmdLog := make(chan LogInfo, 1)
 	logFileDir := "logs"
-	logFilePath := fmt.Sprintf("logs/%s_%s_%s.log", s.Clients[key].SSHInfo.Cluster, s.Clients[key].SSHInfo.UserName, key)
+	logFilePath := fmt.Sprintf("logs/%s_%s_%s.log", j.Clients[key].SSHInfo.Cluster, j.Clients[key].SSHInfo.UserName, key)
 	err = os.MkdirAll(logFileDir, 0766)
 	l, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0766)
 	defer l.Close()

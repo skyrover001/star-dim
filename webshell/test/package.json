@@ -1,0 +1,22 @@
+{
+  "name": "webshell-api-test",
+  "version": "1.0.0",
+  "description": "API testing tools for webshell project",
+  "main": "test_upload.js",
+  "scripts": {
+    "test": "node test_upload.js",
+    "test:login": "node test_upload.js --login-only",
+    "test:full": "node login_test.js",
+    "test:connection": "node login_test.js --connection-only",
+    "test:upload": "node upload_test.js",
+    "test:upload:simple": "node upload_test.js --simple",
+    "install-deps": "npm install"
+  },
+  "dependencies": {
+    "axios": "^1.11.0",
+    "form-data": "^4.0.0"
+  },
+  "keywords": ["webshell", "api", "test", "ssh", "sftp"],
+  "author": "Your Name",
+  "license": "MIT"
+}
