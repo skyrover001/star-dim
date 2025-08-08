@@ -110,10 +110,10 @@ paths:
         name: path
         required: true
         type: string
-      - default: '"tsh_1234567890abcdef"'
-        description: sessionKey
+      - description: SSH会话密钥
+        example: '"tsh_a2e932b625c0d598db3800aa91b92016"'
         in: header
-        name: request
+        name: sessionKey
         required: true
         type: string
       produces:

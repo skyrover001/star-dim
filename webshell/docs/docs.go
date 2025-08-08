@@ -47,9 +47,9 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "default": "\"tsh_1234567890abcdef\"",
-                        "description": "sessionKey",
-                        "name": "request",
+                        "example": "\"tsh_a2e932b625c0d598db3800aa91b92016\"",
+                        "description": "SSH会话密钥",
+                        "name": "sessionKey",
                         "in": "header",
                         "required": true
                     }

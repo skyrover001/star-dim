@@ -124,7 +124,7 @@ func (s *JumpService) Close() {
 // @Produce json
 // @Param cluster query string true "集群名称" example("hpc1")
 // @Param path query string true "目录路径" example("/ai")
-// @Param request header string true "sessionKey" default("tsh_1234567890abcdef") "SSH session key, must be in header"
+// @Param sessionKey header string true "SSH会话密钥" example("tsh_a2e932b625c0d598db3800aa91b92016")
 // @Success 200 {object} object{listContent=[]FileInfoJSON,listLength=int,success=string} "成功返回文件列表"
 // @Failure 400 {object} object{error=string} "请求参数错误"
 // @Failure 500 {object} object{error=string} "服务器内部错误或用户未登录"
