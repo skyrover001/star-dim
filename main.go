@@ -13,8 +13,8 @@ import (
 func main() {
 	// 定义命令行参数
 	var (
-		host = flag.String("host", getEnvOrDefault("STARDIM_HOST", "0.0.0.0"), "服务器监听地址")
-		port = flag.String("port", getEnvOrDefault("STARDIM_PORT", "8080"), "服务器监听端口")
+		host = flag.String("host", getEnvOrDefault("STAR_DIM_HOST", "0.0.0.0"), "服务器监听地址")
+		port = flag.String("port", getEnvOrDefault("STAR_DIM_PORT", "8080"), "服务器监听端口")
 		help = flag.Bool("help", false, "显示帮助信息")
 	)
 
@@ -27,11 +27,11 @@ func main() {
 		fmt.Println("选项:")
 		flag.PrintDefaults()
 		fmt.Println("\n环境变量:")
-		fmt.Println("  WEBSHELL_HOST    服务器监听地址 (默认: 0.0.0.0)")
-		fmt.Println("  WEBSHELL_PORT    服务器监听端口 (默认: 8080)")
+		fmt.Println("  STAR-DIM_HOST    服务器监听地址 (默认: 0.0.0.0)")
+		fmt.Println("  STAR-DIM_PORT    服务器监听端口 (默认: 8080)")
 		fmt.Println("\n示例:")
 		fmt.Printf("  %s -host 127.0.0.1 -port 9090\n", os.Args[0])
-		fmt.Printf("  WEBSHELL_HOST=192.168.1.100 WEBSHELL_PORT=8888 %s\n", os.Args[0])
+		fmt.Printf("  STAR-DIM_HOST=192.168.1.100 STAR-DIM_PORT=8888 %s\n", os.Args[0])
 		return
 	}
 	conf := configs.Config{
