@@ -13,15 +13,15 @@ import (
 func main() {
 	// 定义命令行参数
 	var (
-		host = flag.String("host", getEnvOrDefault("WEBSHELL_HOST", "0.0.0.0"), "服务器监听地址")
-		port = flag.String("port", getEnvOrDefault("WEBSHELL_PORT", "8080"), "服务器监听端口")
+		host = flag.String("host", getEnvOrDefault("STARDIM_HOST", "0.0.0.0"), "服务器监听地址")
+		port = flag.String("port", getEnvOrDefault("STARDIM_PORT", "8080"), "服务器监听端口")
 		help = flag.Bool("help", false, "显示帮助信息")
 	)
 
 	flag.Parse()
 	// 显示帮助信息
 	if *help {
-		fmt.Println("WebShell 服务器")
+		fmt.Println("star-dim星维融合算力接入服务器")
 		fmt.Println("用法:")
 		fmt.Printf("  %s [选项]\n\n", os.Args[0])
 		fmt.Println("选项:")
