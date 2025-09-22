@@ -311,7 +311,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "object",
                             "properties": {
-                                " force_dir": {
+                                "force_dir": {
                                     "type": "boolean"
                                 },
                                 "path": {

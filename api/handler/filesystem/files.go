@@ -517,7 +517,7 @@ func (h *FilesHandler) New(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param sessionKey header string true "SSH会话密钥" example("tsh_a2e932b625c0d598db3800aa91b92016")
-// @Param request body object{path=string,type=string, force_dir=bool} true "删除请求参数" Example({"path":"/ai/new_folder/test.sh","type":"file", "force_dir":false})
+// @Param request body object{path=string,type=string,force_dir=bool} true "删除请求参数" Example({"path":"/ai/new_folder/test.sh","type":"file", "force_dir":false})
 // @Success 200 {object} object{success=string} "删除成功" example({"success":"yes"})
 // @Failure 400 {object} object{error=string} "请求参数错误"
 // @Failure 404 {object} object{error=string} "文件或目录不存在"

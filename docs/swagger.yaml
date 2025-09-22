@@ -543,7 +543,7 @@ paths:
         required: true
         schema:
           properties:
-            ' force_dir':
+            force_dir:
               type: boolean
             path:
               type: string
