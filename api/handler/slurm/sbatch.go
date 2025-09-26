@@ -2,6 +2,7 @@ package slurm
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"star-dim/internal/service"
 	"star-dim/internal/utils"
@@ -22,7 +23,7 @@ import (
 // @Failure 400 {object} object{error=string} "请求参数错误"
 // @Failure 401 {object} object{error=string} "认证失败，用户名或密码错误"
 // @Failure 500 {object} object{error=string} "服务器内部错误或SSH连接失败"
-// @Router /api/v1/slurm/sbatch/job/ [post]
+// @Router /api/v1/slurm/job/ [post]
 func (h *SlurmHandler) SubmitJob(c *gin.Context) {
 	key := c.GetHeader("sessionKey")
 	if key == "" {
@@ -33,9 +34,9 @@ func (h *SlurmHandler) SubmitJob(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, errors.New("user not login"))
 		return
 	}
-	h.SSHClient = h.Server.Clients[key].SSHClient
+	sshClient := h.Server.Clients[key].SSHClient
 	var req models.SbatchRequest
-	slurmService := service.NewSlurmService(h.SSHClient, h.Parser)
+	slurmService := service.NewSlurmService(sshClient, h.Parser)
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, models.SbatchResponse{
 			Success: "no",
@@ -45,7 +46,9 @@ func (h *SlurmHandler) SubmitJob(c *gin.Context) {
 	}
 
 	// 验证请求参数
-	parser := utils.NewSlurmParser()
+	parser := utils.NewSlurmParser(h.Server.Clients[key].UserInfo)
+	log.Println("parser: ", parser)
+	slurmService.SetParser(parser)
 	if err := parser.ValidateSbatchRequest(&req); err != nil {
 		c.JSON(http.StatusBadRequest, models.SbatchResponse{
 			Success: "no",
@@ -117,13 +120,10 @@ func (h *SlurmHandler) SubmitJobWithScript(c *gin.Context) {
 		return
 	}
 
-	req = models.SbatchRequest{
-		Script: string(scriptContent),
-	}
 	h.parseFormData(c, &req)
 
 	// 验证请求参数
-	parser := utils.NewSlurmParser()
+	parser := utils.NewSlurmParser(h.Server.Clients[key].UserInfo)
 	if err := parser.ValidateSbatchRequest(&req); err != nil {
 		c.JSON(http.StatusBadRequest, models.SbatchResponse{
 			Success: "no",
@@ -191,7 +191,6 @@ func (h *SlurmHandler) QuickSubmit(c *gin.Context) {
 		Username:    quickReq.Username,
 		Password:    quickReq.Password,
 		PrivateKey:  quickReq.PrivateKey,
-		Script:      quickReq.Script,
 		Wrap:        quickReq.Wrap,
 		JobName:     quickReq.JobName,
 		Partition:   quickReq.Partition,
@@ -204,7 +203,7 @@ func (h *SlurmHandler) QuickSubmit(c *gin.Context) {
 	}
 
 	// 验证请求参数
-	parser := utils.NewSlurmParser()
+	parser := utils.NewSlurmParser(h.Server.Clients[key].UserInfo)
 	if err := parser.ValidateSbatchRequest(&req); err != nil {
 		c.JSON(http.StatusBadRequest, models.SbatchResponse{
 			Success: "no",
@@ -215,11 +214,7 @@ func (h *SlurmHandler) QuickSubmit(c *gin.Context) {
 
 	// 执行作业提交
 	var response *models.SbatchResponse
-	if req.Script != "" {
-		response = slurmService.ExecuteSbatchWithUpload(&req, "job_script.sh")
-	} else {
-		response = slurmService.ExecuteSbatch(&req)
-	}
+	response = slurmService.ExecuteSbatch(&req)
 
 	if response.Success == "yes" {
 		c.JSON(http.StatusOK, response)

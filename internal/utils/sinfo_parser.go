@@ -3,6 +3,7 @@ package utils
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"star-dim/internal/models"
 	"strconv"
 	"strings"
@@ -11,7 +12,7 @@ import (
 // BuildCommand 根据请求参数构建 sinfo 命令
 func (p *SlurmParser) BuildSinfoCommand(req models.SinfoRequest) string {
 	cmd := "sinfo"
-
+	log.Println("req:", req)
 	// 基本过滤参数
 	if len(req.Nodes) > 0 {
 		cmd += fmt.Sprintf(" -n %s", strings.Join(req.Nodes, ","))
@@ -118,6 +119,7 @@ func (p *SlurmParser) BuildSinfoCommand(req models.SinfoRequest) string {
 		cmd += fmt.Sprintf(" -i %d", req.Iterate)
 	}
 
+	log.Println("sinfo command:", cmd)
 	return cmd
 }
 

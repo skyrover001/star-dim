@@ -1394,7 +1394,7 @@
                 }
             }
         },
-        "/api/v1/slurm/sacct/accounting/": {
+        "/api/v1/slurm/account/": {
             "post": {
                 "description": "获取作业会计信息，包括作业ID、用户、状态、提交时间等详细信息",
                 "consumes": [
@@ -1477,339 +1477,7 @@
                 }
             }
         },
-        "/api/v1/slurm/sacct/job/user/{user}/": {
-            "post": {
-                "description": "获取作业会计信息，包括作业ID、用户、状态、提交时间等详细信息",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "作业管理"
-                ],
-                "summary": "获取指定用户作业会计信息",
-                "parameters": [
-                    {
-                        "description": "sacct请求参数",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.SacctRequest"
-                        }
-                    },
-                    {
-                        "type": "string",
-                        "example": "\"tsh_a2e932b625c0d598db3800aa91b92016\"",
-                        "description": "SSH会话密钥",
-                        "name": "sessionKey",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "查询成功，返回作业会计信息列表",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "home_path": {
-                                    "type": "string"
-                                },
-                                "session_key": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "认证失败，用户名或密码错误",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误或SSH连接失败",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/slurm/sacct/jobs/": {
-            "post": {
-                "description": "获取作业会计信息，包括作业ID、用户、状态、提交时间等详细信息",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "作业管理"
-                ],
-                "summary": "获取作业会计信息",
-                "parameters": [
-                    {
-                        "description": "sacct请求参数",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.SacctRequest"
-                        }
-                    },
-                    {
-                        "type": "string",
-                        "example": "\"tsh_a2e932b625c0d598db3800aa91b92016\"",
-                        "description": "SSH会话密钥",
-                        "name": "sessionKey",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "查询成功，返回作业会计信息列表",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "home_path": {
-                                    "type": "string"
-                                },
-                                "session_key": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "认证失败，用户名或密码错误",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误或SSH连接失败",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/slurm/sacct/jobs/{jobid}/": {
-            "post": {
-                "description": "获取作业会计信息，包括作业ID、用户、状态、提交时间等详细信息",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "作业管理"
-                ],
-                "summary": "获取指定作业会计信息",
-                "parameters": [
-                    {
-                        "description": "sacct请求参数",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.SacctRequest"
-                        }
-                    },
-                    {
-                        "type": "string",
-                        "example": "\"tsh_a2e932b625c0d598db3800aa91b92016\"",
-                        "description": "SSH会话密钥",
-                        "name": "sessionKey",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "查询成功，返回作业会计信息列表",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "home_path": {
-                                    "type": "string"
-                                },
-                                "session_key": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "认证失败，用户名或密码错误",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误或SSH连接失败",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/slurm/sbatch/job/": {
-            "post": {
-                "description": "使用sbatch命令提交作业",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "作业管理"
-                ],
-                "summary": "使用sbatch命令提交作业",
-                "parameters": [
-                    {
-                        "description": "sbatch请求参数",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.SbatchRequest"
-                        }
-                    },
-                    {
-                        "type": "string",
-                        "example": "\"tsh_a2e932b625c0d598db3800aa91b92016\"",
-                        "description": "SSH会话密钥",
-                        "name": "sessionKey",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "查询成功，返回作业会计信息列表",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "home_path": {
-                                    "type": "string"
-                                },
-                                "session_key": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "认证失败，用户名或密码错误",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误或SSH连接失败",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/slurm/sinfo/cluster/": {
+        "/api/v1/slurm/cluster/": {
             "post": {
                 "description": "获取集群信息",
                 "consumes": [
@@ -1892,7 +1560,172 @@
                 }
             }
         },
-        "/api/v1/slurm/squeue/jobs/": {
+        "/api/v1/slurm/job": {
+            "delete": {
+                "description": "使用scancel命令取消一个或多个Slurm作业，支持多种过滤条件",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "作业管理"
+                ],
+                "summary": "取消Slurm作业",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "会话密钥",
+                        "name": "session_key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "取消作业请求参数",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ScancelRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "操作成功",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                },
+                                "output": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "用户未认证",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/slurm/job/": {
+            "post": {
+                "description": "使用sbatch命令提交作业",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "作业管理"
+                ],
+                "summary": "使用sbatch命令提交作业",
+                "parameters": [
+                    {
+                        "description": "sbatch请求参数",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.SbatchRequest"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"tsh_a2e932b625c0d598db3800aa91b92016\"",
+                        "description": "SSH会话密钥",
+                        "name": "sessionKey",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "查询成功，返回作业会计信息列表",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "home_path": {
+                                    "type": "string"
+                                },
+                                "session_key": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "认证失败，用户名或密码错误",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误或SSH连接失败",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/slurm/jobs/": {
             "post": {
                 "description": "获取作业列表信息，包括作业ID、用户、状态、提交时间等信息",
                 "consumes": [
@@ -2561,9 +2394,6 @@
                 "resv_ports": {
                     "type": "boolean"
                 },
-                "script": {
-                    "type": "string"
-                },
                 "script_args": {
                     "type": "array",
                     "items": {
@@ -2625,6 +2455,98 @@
                     "type": "string"
                 },
                 "wrap": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ScancelRequest": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "description": "只作用于此账户的作业",
+                    "type": "string"
+                },
+                "batch": {
+                    "description": "向指定作业的批处理shell发送信号",
+                    "type": "boolean"
+                },
+                "clusters": {
+                    "description": "要发出命令的集群",
+                    "type": "string"
+                },
+                "cron": {
+                    "description": "取消scrontab作业",
+                    "type": "boolean"
+                },
+                "ctld": {
+                    "description": "直接向slurmctld发送请求",
+                    "type": "boolean"
+                },
+                "full": {
+                    "description": "向批处理shell和所有步骤发送信号",
+                    "type": "boolean"
+                },
+                "hurry": {
+                    "description": "避免burst buffer阶段输出",
+                    "type": "boolean"
+                },
+                "interactive": {
+                    "description": "每个作业都需要用户响应",
+                    "type": "boolean"
+                },
+                "jobids": {
+                    "description": "要取消的作业ID列表",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "description": "只作用于此名称的作业",
+                    "type": "string"
+                },
+                "nodelist": {
+                    "description": "只作用于这些节点上的作业",
+                    "type": "string"
+                },
+                "partition": {
+                    "description": "只作用于此分区中的作业",
+                    "type": "string"
+                },
+                "qos": {
+                    "description": "只作用于此服务质量的作业",
+                    "type": "string"
+                },
+                "quiet": {
+                    "description": "禁用警告",
+                    "type": "boolean"
+                },
+                "reservation": {
+                    "description": "只作用于此预留的作业",
+                    "type": "string"
+                },
+                "sibling": {
+                    "description": "从联合作业中移除活跃的兄弟作业",
+                    "type": "string"
+                },
+                "signal": {
+                    "description": "要发送给作业的信号，默认是SIGKILL",
+                    "type": "string"
+                },
+                "state": {
+                    "description": "只作用于此状态的作业（PENDING, RUNNING, SUSPENDED）",
+                    "type": "string"
+                },
+                "user": {
+                    "description": "只作用于此用户的作业",
+                    "type": "string"
+                },
+                "verbose": {
+                    "description": "详细程度级别",
+                    "type": "boolean"
+                },
+                "wckey": {
+                    "description": "只作用于此工作负载特征键的作业",
                     "type": "string"
                 }
             }

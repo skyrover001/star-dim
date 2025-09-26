@@ -25,7 +25,7 @@ import (
 // @Failure 400 {object} object{error=string} "请求参数错误"
 // @Failure 401 {object} object{error=string} "认证失败，用户名或密码错误"
 // @Failure 500 {object} object{error=string} "服务器内部错误或SSH连接失败"
-// @Router /api/v1/slurm/squeue/jobs/ [post]
+// @Router /api/v1/slurm/jobs/ [post]
 func (h *SlurmHandler) GetQueue(c *gin.Context) {
 	key := c.GetHeader("sessionKey")
 	if key == "" {
@@ -253,7 +253,7 @@ func (h *SlurmHandler) GetQueueStats(c *gin.Context) {
 	req.NoHeader = true
 
 	// 验证请求参数
-	parser := utils.NewSlurmParser()
+	parser := utils.NewSlurmParser(nil)
 	if err := parser.ValidateSqueueRequest(req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
@@ -320,7 +320,7 @@ func (h *SlurmHandler) GetQueueStats(c *gin.Context) {
 // processQueueRequest 处理队列查询请求的通用逻辑
 func processQueueRequest(c *gin.Context, req models.SqueueRequest, sshClient *ssh.Client) {
 	// 验证请求参数
-	parser := utils.NewSlurmParser()
+	parser := utils.NewSlurmParser(nil)
 	if err := parser.ValidateSqueueRequest(req); err != nil {
 		c.JSON(http.StatusBadRequest, models.SqueueResponse{
 			Success: "no",

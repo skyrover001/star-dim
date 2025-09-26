@@ -131,6 +131,10 @@ func (p *SlurmParser) BuildSacctCommand(req *models.SacctRequest) string {
 		args = append(args, "-n")
 	}
 
+	if req.Allocations {
+		args = append(args, "-X")
+	}
+
 	return strings.Join(args, " ")
 }
 
@@ -172,10 +176,55 @@ func (p *SlurmParser) ParseSacctOutput(output string, format string) ([]models.J
 			continue
 		}
 
+		// 过滤掉空作业记录
+		if p.isInvalidJobRecord(job) {
+			continue
+		}
+
 		jobs = append(jobs, job)
 	}
 
 	return jobs, nil
+}
+
+// isInvalidJobRecord 检查是否为空作业记录
+func (p *SlurmParser) isInvalidJobRecord(job models.JobInfo) bool {
+	// 检查作业ID是否为无效值（如分隔符）
+	if job.JobID == "------------" || job.JobID == "" {
+		return true
+	}
+
+	// 检查作业名是否为无效值
+	if job.JobName == "----------" || job.JobName == "" {
+		return true
+	}
+
+	// 检查状态是否为无效值
+	if job.State == "----------" || job.State == "" {
+		return true
+	}
+
+	// 检查节点列表是否为无效值
+	if job.NodeList == "---------------" {
+		return true
+	}
+
+	// 检查用户是否为无效值
+	if job.User == "---------" || job.User == "" {
+		return true
+	}
+
+	// 检查分区是否为无效值
+	if job.Partition == "----------" {
+		return true
+	}
+
+	// 检查账户是否为无效值
+	if job.Account == "----------" {
+		return true
+	}
+
+	return false
 }
 
 // parseJobLine 解析单个作业行

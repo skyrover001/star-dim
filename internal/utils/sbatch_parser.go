@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"star-dim/internal/models"
 	"strconv"
@@ -11,6 +12,7 @@ import (
 // BuildCommand 根据请求参数构建 sbatch 命令
 func (p *SlurmParser) BuildSbatchCommand(req *models.SbatchRequest) (string, error) {
 	var args []string
+	log.Println("req:", req)
 	args = append(args, "sbatch")
 
 	// 并行运行选项
@@ -388,16 +390,20 @@ func (p *SlurmParser) BuildSbatchCommand(req *models.SbatchRequest) (string, err
 		args = append(args, "--wrap", req.Wrap)
 	} else if req.ScriptFile != "" {
 		// 使用现有的脚本文件
-		args = append(args, req.ScriptFile)
+		log.Println("Using existing script file:", req.ScriptFile)
+		log.Println("parser home path:", p.HomePath)
+		if p.HomePath != "" {
+			scriptPath := p.processScriptPath(req.ScriptFile, p.HomePath)
+			args = append(args, scriptPath)
+		} else {
+			args = append(args, req.ScriptFile)
+		}
 		// 添加脚本参数
 		if len(req.ScriptArgs) > 0 {
 			args = append(args, req.ScriptArgs...)
 		}
-	} else if req.Script != "" {
-		// 需要先创建临时脚本文件
-		return "", fmt.Errorf("script content provided but script upload is not implemented in command builder")
 	} else {
-		return "", fmt.Errorf("no script provided (script, script_file, or wrap required)")
+		return "", fmt.Errorf("no script provided (script_file, or wrap required)")
 	}
 
 	return strings.Join(args, " "), nil
@@ -489,7 +495,7 @@ func (p *SlurmParser) ParseSbatchOutput(output string) (*models.SbatchResponse, 
 // ValidateRequest 验证 sbatch 请求参数
 func (p *SlurmParser) ValidateSbatchRequest(req *models.SbatchRequest) error {
 	// 检查脚本信息
-	if req.Script == "" && req.ScriptFile == "" && req.Wrap == "" {
+	if req.ScriptFile == "" && req.Wrap == "" {
 		return fmt.Errorf("script, script_file, or wrap is required")
 	}
 
@@ -514,4 +520,14 @@ func (p *SlurmParser) ValidateSbatchRequest(req *models.SbatchRequest) error {
 	}
 
 	return nil
+}
+
+func (p *SlurmParser) processScriptPath(scriptFile string, homePath string) string {
+	// 检查是否为绝对路径（以 / 开头）
+	if strings.HasPrefix(scriptFile, "/") {
+		// 如果是绝对路径，则添加 homePath 前缀
+		return homePath + scriptFile
+	}
+	// 如果是相对路径，则直接返回
+	return scriptFile
 }

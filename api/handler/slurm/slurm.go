@@ -14,7 +14,7 @@ type SlurmHandler struct {
 
 func NewSlurmHandler(server *public.Server) *SlurmHandler {
 	return &SlurmHandler{
-		Parser: utils.NewSlurmParser(),
+		Parser: utils.NewSlurmParser(nil),
 		Server: server,
 	}
 }

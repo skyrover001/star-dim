@@ -65,6 +65,7 @@ type SacctRequest struct {
 	Truncate    bool     `json:"truncate,omitempty"`
 	ArrayJobs   bool     `json:"arrayjobs,omitempty"`
 	Completion  bool     `json:"completion,omitempty"`
+	Allocations bool     `json:"allocations,omitempty"`
 }
 
 type SacctResponse struct {
@@ -92,7 +93,6 @@ type SbatchRequest struct {
 	Username          string   `json:"username"`
 	Password          string   `json:"password,omitempty"`
 	PrivateKey        string   `json:"privatekey,omitempty"`
-	Script            string   `json:"script"`
 	ScriptFile        string   `json:"script_file,omitempty"`
 	ScriptArgs        []string `json:"script_args,omitempty"`
 	Array             string   `json:"array,omitempty"`
@@ -392,4 +392,29 @@ type NodeSummary struct {
 	State string `json:"state"`
 	Count int    `json:"count"`
 	CPUs  int    `json:"cpus"`
+}
+
+// ScancelRequest 表示 scancel 命令请求参数
+type ScancelRequest struct {
+	JobIDs      []string `json:"jobids,omitempty"`      // 要取消的作业ID列表
+	Account     string   `json:"account,omitempty"`     // 只作用于此账户的作业
+	Batch       bool     `json:"batch,omitempty"`       // 向指定作业的批处理shell发送信号
+	Ctld        bool     `json:"ctld,omitempty"`        // 直接向slurmctld发送请求
+	Cron        bool     `json:"cron,omitempty"`        // 取消scrontab作业
+	Full        bool     `json:"full,omitempty"`        // 向批处理shell和所有步骤发送信号
+	Hurry       bool     `json:"hurry,omitempty"`       // 避免burst buffer阶段输出
+	Interactive bool     `json:"interactive,omitempty"` // 每个作业都需要用户响应
+	Clusters    string   `json:"clusters,omitempty"`    // 要发出命令的集群
+	Name        string   `json:"name,omitempty"`        // 只作用于此名称的作业
+	Partition   string   `json:"partition,omitempty"`   // 只作用于此分区中的作业
+	Quiet       bool     `json:"quiet,omitempty"`       // 禁用警告
+	QOS         string   `json:"qos,omitempty"`         // 只作用于此服务质量的作业
+	Reservation string   `json:"reservation,omitempty"` // 只作用于此预留的作业
+	Sibling     string   `json:"sibling,omitempty"`     // 从联合作业中移除活跃的兄弟作业
+	Signal      string   `json:"signal,omitempty"`      // 要发送给作业的信号，默认是SIGKILL
+	State       string   `json:"state,omitempty"`       // 只作用于此状态的作业（PENDING, RUNNING, SUSPENDED）
+	User        string   `json:"user,omitempty"`        // 只作用于此用户的作业
+	Verbose     bool     `json:"verbose,omitempty"`     // 详细程度级别
+	NodeList    string   `json:"nodelist,omitempty"`    // 只作用于这些节点上的作业
+	WCKey       string   `json:"wckey,omitempty"`       // 只作用于此工作负载特征键的作业
 }

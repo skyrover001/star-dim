@@ -297,8 +297,6 @@ definitions:
         type: string
       resv_ports:
         type: boolean
-      script:
-        type: string
       script_args:
         items:
           type: string
@@ -340,6 +338,74 @@ definitions:
       wckey:
         type: string
       wrap:
+        type: string
+    type: object
+  models.ScancelRequest:
+    properties:
+      account:
+        description: 只作用于此账户的作业
+        type: string
+      batch:
+        description: 向指定作业的批处理shell发送信号
+        type: boolean
+      clusters:
+        description: 要发出命令的集群
+        type: string
+      cron:
+        description: 取消scrontab作业
+        type: boolean
+      ctld:
+        description: 直接向slurmctld发送请求
+        type: boolean
+      full:
+        description: 向批处理shell和所有步骤发送信号
+        type: boolean
+      hurry:
+        description: 避免burst buffer阶段输出
+        type: boolean
+      interactive:
+        description: 每个作业都需要用户响应
+        type: boolean
+      jobids:
+        description: 要取消的作业ID列表
+        items:
+          type: string
+        type: array
+      name:
+        description: 只作用于此名称的作业
+        type: string
+      nodelist:
+        description: 只作用于这些节点上的作业
+        type: string
+      partition:
+        description: 只作用于此分区中的作业
+        type: string
+      qos:
+        description: 只作用于此服务质量的作业
+        type: string
+      quiet:
+        description: 禁用警告
+        type: boolean
+      reservation:
+        description: 只作用于此预留的作业
+        type: string
+      sibling:
+        description: 从联合作业中移除活跃的兄弟作业
+        type: string
+      signal:
+        description: 要发送给作业的信号，默认是SIGKILL
+        type: string
+      state:
+        description: 只作用于此状态的作业（PENDING, RUNNING, SUSPENDED）
+        type: string
+      user:
+        description: 只作用于此用户的作业
+        type: string
+      verbose:
+        description: 详细程度级别
+        type: boolean
+      wckey:
+        description: 只作用于此工作负载特征键的作业
         type: string
     type: object
   models.SinfoRequest:
@@ -1440,7 +1506,7 @@ paths:
       summary: 获取磁盘配额信息
       tags:
       - 文件管理
-  /api/v1/slurm/sacct/accounting/:
+  /api/v1/slurm/account/:
     post:
       consumes:
       - application/json
@@ -1494,223 +1560,7 @@ paths:
       summary: 获取作业会计信息
       tags:
       - 作业管理
-  /api/v1/slurm/sacct/job/user/{user}/:
-    post:
-      consumes:
-      - application/json
-      description: 获取作业会计信息，包括作业ID、用户、状态、提交时间等详细信息
-      parameters:
-      - description: sacct请求参数
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/models.SacctRequest'
-      - description: SSH会话密钥
-        example: '"tsh_a2e932b625c0d598db3800aa91b92016"'
-        in: header
-        name: sessionKey
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 查询成功，返回作业会计信息列表
-          schema:
-            properties:
-              home_path:
-                type: string
-              session_key:
-                type: string
-            type: object
-        "400":
-          description: 请求参数错误
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "401":
-          description: 认证失败，用户名或密码错误
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "500":
-          description: 服务器内部错误或SSH连接失败
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-      summary: 获取指定用户作业会计信息
-      tags:
-      - 作业管理
-  /api/v1/slurm/sacct/jobs/:
-    post:
-      consumes:
-      - application/json
-      description: 获取作业会计信息，包括作业ID、用户、状态、提交时间等详细信息
-      parameters:
-      - description: sacct请求参数
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/models.SacctRequest'
-      - description: SSH会话密钥
-        example: '"tsh_a2e932b625c0d598db3800aa91b92016"'
-        in: header
-        name: sessionKey
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 查询成功，返回作业会计信息列表
-          schema:
-            properties:
-              home_path:
-                type: string
-              session_key:
-                type: string
-            type: object
-        "400":
-          description: 请求参数错误
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "401":
-          description: 认证失败，用户名或密码错误
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "500":
-          description: 服务器内部错误或SSH连接失败
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-      summary: 获取作业会计信息
-      tags:
-      - 作业管理
-  /api/v1/slurm/sacct/jobs/{jobid}/:
-    post:
-      consumes:
-      - application/json
-      description: 获取作业会计信息，包括作业ID、用户、状态、提交时间等详细信息
-      parameters:
-      - description: sacct请求参数
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/models.SacctRequest'
-      - description: SSH会话密钥
-        example: '"tsh_a2e932b625c0d598db3800aa91b92016"'
-        in: header
-        name: sessionKey
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 查询成功，返回作业会计信息列表
-          schema:
-            properties:
-              home_path:
-                type: string
-              session_key:
-                type: string
-            type: object
-        "400":
-          description: 请求参数错误
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "401":
-          description: 认证失败，用户名或密码错误
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "500":
-          description: 服务器内部错误或SSH连接失败
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-      summary: 获取指定作业会计信息
-      tags:
-      - 作业管理
-  /api/v1/slurm/sbatch/job/:
-    post:
-      consumes:
-      - application/json
-      description: 使用sbatch命令提交作业
-      parameters:
-      - description: sbatch请求参数
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/models.SbatchRequest'
-      - description: SSH会话密钥
-        example: '"tsh_a2e932b625c0d598db3800aa91b92016"'
-        in: header
-        name: sessionKey
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 查询成功，返回作业会计信息列表
-          schema:
-            properties:
-              home_path:
-                type: string
-              session_key:
-                type: string
-            type: object
-        "400":
-          description: 请求参数错误
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "401":
-          description: 认证失败，用户名或密码错误
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "500":
-          description: 服务器内部错误或SSH连接失败
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-      summary: 使用sbatch命令提交作业
-      tags:
-      - 作业管理
-  /api/v1/slurm/sinfo/cluster/:
+  /api/v1/slurm/cluster/:
     post:
       consumes:
       - application/json
@@ -1764,7 +1614,114 @@ paths:
       summary: 获取集群、分区和节点信息
       tags:
       - 作业管理
-  /api/v1/slurm/squeue/jobs/:
+  /api/v1/slurm/job:
+    delete:
+      consumes:
+      - application/json
+      description: 使用scancel命令取消一个或多个Slurm作业，支持多种过滤条件
+      parameters:
+      - description: 会话密钥
+        in: header
+        name: session_key
+        required: true
+        type: string
+      - description: 取消作业请求参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ScancelRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 操作成功
+          schema:
+            properties:
+              message:
+                type: string
+              output:
+                type: string
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "401":
+          description: 用户未认证
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: 取消Slurm作业
+      tags:
+      - 作业管理
+  /api/v1/slurm/job/:
+    post:
+      consumes:
+      - application/json
+      description: 使用sbatch命令提交作业
+      parameters:
+      - description: sbatch请求参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.SbatchRequest'
+      - description: SSH会话密钥
+        example: '"tsh_a2e932b625c0d598db3800aa91b92016"'
+        in: header
+        name: sessionKey
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 查询成功，返回作业会计信息列表
+          schema:
+            properties:
+              home_path:
+                type: string
+              session_key:
+                type: string
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "401":
+          description: 认证失败，用户名或密码错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: 服务器内部错误或SSH连接失败
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: 使用sbatch命令提交作业
+      tags:
+      - 作业管理
+  /api/v1/slurm/jobs/:
     post:
       consumes:
       - application/json

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"golang.org/x/crypto/ssh"
+	"log"
 	"path/filepath"
 	"star-dim/internal/models"
 	"star-dim/internal/utils"
@@ -20,6 +21,10 @@ func NewSlurmService(sshClient *ssh.Client, parser *utils.SlurmParser) *SlurmSer
 		sshClient: sshClient,
 		parser:    parser,
 	}
+}
+
+func (s *SlurmService) SetParser(parser *utils.SlurmParser) {
+	s.parser = parser
 }
 
 func (s *SlurmService) SSHClient() *ssh.Client {
@@ -92,6 +97,7 @@ func (s *SlurmService) ExecuteSbatch(req *models.SbatchRequest) *models.SbatchRe
 	session.Stdout = &stdout
 	session.Stderr = &stderr
 	err = session.Run(command)
+	log.Println("sbatch command:", command)
 	// 解析输出
 	output := stdout.String()
 	response, err := s.parser.ParseSbatchOutput(output)
@@ -122,18 +128,18 @@ func (s *SlurmService) ExecuteSbatchWithUpload(req *models.SbatchRequest, filena
 	scriptPath := filepath.Join("/tmp", fmt.Sprintf("sbatch_script_%s_%s", timestamp, filename))
 
 	// 上传脚本文件
-	uploadCommand := fmt.Sprintf("cat > %s << 'EOF'\n%s\nEOF", scriptPath, req.Script)
+	//uploadCommand := fmt.Sprintf("cat > %s << 'EOF'\n%s\nEOF", scriptPath, req.Script)
 	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-	session.Stdout = &stdout
-	session.Stderr = &stderr
-	err = session.Run(uploadCommand)
-	if err != nil {
-		return &models.SbatchResponse{
-			Success: "no",
-			Message: "Failed to upload script file: " + err.Error(),
-		}
-	}
+	//var stderr bytes.Buffer
+	//session.Stdout = &stdout
+	//session.Stderr = &stderr
+	//err = session.Run(uploadCommand)
+	//if err != nil {
+	//	return &models.SbatchResponse{
+	//		Success: "no",
+	//		Message: "Failed to upload script file: " + err.Error(),
+	//	}
+	//}
 
 	chmodCommand := fmt.Sprintf("chmod +x %s", scriptPath)
 	err = session.Run(chmodCommand)
@@ -145,7 +151,6 @@ func (s *SlurmService) ExecuteSbatchWithUpload(req *models.SbatchRequest, filena
 	}
 
 	req.ScriptFile = scriptPath
-	req.Script = ""
 	command, err := s.parser.BuildSbatchCommand(req)
 	if err != nil {
 		// 清理临时文件
@@ -159,7 +164,7 @@ func (s *SlurmService) ExecuteSbatchWithUpload(req *models.SbatchRequest, filena
 	err = session.Run(command)
 	// 清理临时文件
 	cleanupCommand := fmt.Sprintf("rm -f %s", scriptPath)
-	session.Run(cleanupCommand)
+	err = session.Run(cleanupCommand)
 
 	var output = stdout.String()
 	if err != nil {

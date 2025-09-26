@@ -26,7 +26,7 @@ import (
 // @Failure 400 {object} object{error=string} "请求参数错误"
 // @Failure 401 {object} object{error=string} "认证失败，用户名或密码错误"
 // @Failure 500 {object} object{error=string} "服务器内部错误或SSH连接失败"
-// @Router /api/v1/slurm/sinfo/cluster/ [post]
+// @Router /api/v1/slurm/cluster/ [post]
 func (h *SlurmHandler) GetClusterInfo(c *gin.Context) {
 	key := c.GetHeader("sessionKey")
 	if key == "" {
@@ -41,57 +41,60 @@ func (h *SlurmHandler) GetClusterInfo(c *gin.Context) {
 	slurmService := service.NewSlurmService(h.SSHClient, h.Parser)
 	var req models.SinfoRequest
 
-	if portStr := c.Query("port"); portStr != "" {
-		if port, err := strconv.Atoi(portStr); err == nil {
-			req.Port = port
+	if err := c.ShouldBindJSON(&req); err != nil {
+		// 如果无法从body中获取参数，则尝试从查询参数中获取
+		if portStr := c.Query("port"); portStr != "" {
+			if port, err := strconv.Atoi(portStr); err == nil {
+				req.Port = port
+			}
 		}
-	}
 
-	// 从查询参数中获取过滤条件
-	if nodes := c.Query("nodes"); nodes != "" {
-		req.Nodes = strings.Split(nodes, ",")
-	}
-	if partitions := c.Query("partitions"); partitions != "" {
-		req.Partitions = strings.Split(partitions, ",")
-	}
-	if states := c.Query("states"); states != "" {
-		req.States = strings.Split(states, ",")
-	}
-	if clusters := c.Query("clusters"); clusters != "" {
-		req.Clusters = strings.Split(clusters, ",")
-	}
+		// 从查询参数中获取过滤条件
+		if nodes := c.Query("nodes"); nodes != "" {
+			req.Nodes = strings.Split(nodes, ",")
+		}
+		if partitions := c.Query("partitions"); partitions != "" {
+			req.Partitions = strings.Split(partitions, ",")
+		}
+		if states := c.Query("states"); states != "" {
+			req.States = strings.Split(states, ",")
+		}
+		if clusters := c.Query("clusters"); clusters != "" {
+			req.Clusters = strings.Split(clusters, ",")
+		}
 
-	// 显示选项
-	req.All = c.Query("all") == "true"
-	req.Dead = c.Query("dead") == "true"
-	req.Exact = c.Query("exact") == "true"
-	req.Future = c.Query("future") == "true"
-	req.Hide = c.Query("hide") == "true"
-	req.Long = c.Query("long") == "true"
-	req.NodeCentric = c.Query("node_centric") == "true"
-	req.Responding = c.Query("responding") == "true"
-	req.ListReasons = c.Query("list_reasons") == "true"
-	req.Summarize = c.Query("summarize") == "true"
-	req.Reservation = c.Query("reservation") == "true"
-	req.Verbose = c.Query("verbose") == "true"
-	req.Federation = c.Query("federation") == "true"
-	req.Local = c.Query("local") == "true"
-	req.NoConvert = c.Query("noconvert") == "true"
-	req.NoHeader = c.Query("noheader") == "true"
+		// 显示选项
+		req.All = c.Query("all") == "true"
+		req.Dead = c.Query("dead") == "true"
+		req.Exact = c.Query("exact") == "true"
+		req.Future = c.Query("future") == "true"
+		req.Hide = c.Query("hide") == "true"
+		req.Long = c.Query("long") == "true"
+		req.NodeCentric = c.Query("node_centric") == "true"
+		req.Responding = c.Query("responding") == "true"
+		req.ListReasons = c.Query("list_reasons") == "true"
+		req.Summarize = c.Query("summarize") == "true"
+		req.Reservation = c.Query("reservation") == "true"
+		req.Verbose = c.Query("verbose") == "true"
+		req.Federation = c.Query("federation") == "true"
+		req.Local = c.Query("local") == "true"
+		req.NoConvert = c.Query("noconvert") == "true"
+		req.NoHeader = c.Query("noheader") == "true"
 
-	// 输出格式控制
-	req.Format = c.Query("format")
-	req.FormatLong = c.Query("format_long")
-	req.JSON = c.Query("json")
-	req.YAML = c.Query("yaml")
+		// 输出格式控制
+		req.Format = c.Query("format")
+		req.FormatLong = c.Query("format_long")
+		req.JSON = c.Query("json")
+		req.YAML = c.Query("yaml")
 
-	if sort := c.Query("sort"); sort != "" {
-		req.Sort = strings.Split(sort, ",")
-	}
+		if sort := c.Query("sort"); sort != "" {
+			req.Sort = strings.Split(sort, ",")
+		}
 
-	if iterateStr := c.Query("iterate"); iterateStr != "" {
-		if iterate, err := strconv.Atoi(iterateStr); err == nil {
-			req.Iterate = iterate
+		if iterateStr := c.Query("iterate"); iterateStr != "" {
+			if iterate, err := strconv.Atoi(iterateStr); err == nil {
+				req.Iterate = iterate
+			}
 		}
 	}
 
@@ -264,7 +267,7 @@ func (h *SlurmHandler) GetClusterSummary(c *gin.Context) {
 // processClusterInfoRequest 处理集群信息查询请求的通用逻辑
 func processClusterInfoRequest(c *gin.Context, req models.SinfoRequest, sshClient *ssh.Client) {
 	// 验证请求参数
-	parser := utils.NewSlurmParser()
+	parser := utils.NewSlurmParser(nil)
 	if err := parser.ValidateSinfoRequest(req); err != nil {
 		c.JSON(http.StatusBadRequest, models.SinfoResponse{
 			Success: "no",

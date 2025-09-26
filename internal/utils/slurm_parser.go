@@ -3,16 +3,26 @@ package utils
 import (
 	"fmt"
 	"regexp"
+	"star-dim/internal/models"
 	"strings"
 	"time"
 )
 
 // SacctParser SLURM sacct 命令解析器
-type SlurmParser struct{}
+type SlurmParser struct {
+	HomePath string
+}
 
 // NewSacctParser 创建新的解析器
-func NewSlurmParser() *SlurmParser {
-	return &SlurmParser{}
+func NewSlurmParser(slurmUser *models.User) *SlurmParser {
+	if slurmUser == nil {
+		return &SlurmParser{
+			HomePath: "",
+		}
+	}
+	return &SlurmParser{
+		HomePath: slurmUser.HomePath,
+	}
 }
 
 // inferHeadersFromFormat 从格式字符串推断表头
